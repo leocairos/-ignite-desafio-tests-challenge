@@ -12,17 +12,16 @@ import { User } from '@modules/users/entities/User';
 let connection: Connection;
 let userTest: User;
 
-describe('Show User Profile Controller', () => {
+describe('Get Balance Controller', () => {
 
   beforeAll(async () => {
     connection = await createConnection('localhost', true);
     await connection.runMigrations();
-
     const id = uuidV4();
 
     userTest = {
       id,
-      name: `Show User Profile Test ${id}`,
+      name: `Get Balance Test ${id}`,
       email: `${id}@mail.com`,
       password: 'password123',
       created_at: new Date(),
@@ -42,12 +41,15 @@ describe('Show User Profile Controller', () => {
 
   afterAll(async () => {
     await connection.query(
+      `DELETE FROM STATEMENTS WHERE user_id = '${userTest.id}'`,
+    );
+    await connection.query(
       `DELETE FROM USERS WHERE id = '${userTest.id}'`,
     );
     await connection.close();
   });
 
-  it('should be able to show a user profile', async() => {
+  it('should be able to get a balance', async() => {
     const responseToken = await request(app)
       .post('/api/v1/sessions')
       .send({
@@ -57,12 +59,14 @@ describe('Show User Profile Controller', () => {
 
     const { token } = responseToken.body;
 
-    const responseShowProfile = await request(app)
-      .get('/api/v1/profile')
-      .set({
-        Authorization: `Bearer ${token}`,
-      });
+    const response = await request(app)
+    .get('/api/v1/statements/balance')
+    .set({
+      Authorization: `Bearer ${token}`,
+    });
 
-    expect(responseShowProfile.body).toHaveProperty("id")
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('statement');
+    expect(response.body).toHaveProperty('balance');
   })
 })
